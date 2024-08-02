@@ -31,17 +31,16 @@ func newSumNode(left, right *SumNode, data []byte, value int) *SumNode {
 	return node
 }
 
-func (n *SumNode) generateProof(data []byte, path *[][]byte, sums *[]int) bool {
+func (n *SumNode) generateProof(hash []byte, path *[][]byte, sums *[]int) bool {
 	if n.left == nil && n.right == nil {
-		hash := sha256.Sum256(data)
 		return bytes.Equal(n.hash, hash[:])
 	}
-	if n.left != nil && n.left.generateProof(data, path, sums) {
+	if n.left != nil && n.left.generateProof(hash, path, sums) {
 		*path = append(*path, append([]byte{0x00}, n.right.hash...))
 		*sums = append(*sums, n.right.sum)
 		return true
 	}
-	if n.right != nil && n.right.generateProof(data, path, sums) {
+	if n.right != nil && n.right.generateProof(hash, path, sums) {
 		*path = append(*path, append([]byte{0x01}, n.left.hash...))
 		*sums = append(*sums, n.left.sum)
 		return true
@@ -60,22 +59,20 @@ func (n *SumNode) updateHashAndSum() {
 	n.sum = n.left.sum + n.right.sum
 }
 
-func (n *SumNode) updateLeaf(oldData []byte, newData []byte, newValue int) bool {
+func (n *SumNode) updateLeaf(oldHash []byte, newHash []byte, newValue int) bool {
 	if n.left == nil && n.right == nil {
-		hash := sha256.Sum256(oldData)
-		if bytes.Equal(n.hash, hash[:]) {
-			newHash := sha256.Sum256(newData)
+		if bytes.Equal(n.hash, oldHash) {
 			n.hash = newHash[:]
 			n.sum = newValue
 			return true
 		}
 		return false
 	}
-	if n.left != nil && n.left.updateLeaf(oldData, newData, newValue) {
+	if n.left != nil && n.left.updateLeaf(oldHash, newHash, newValue) {
 		n.updateHashAndSum()
 		return true
 	}
-	if n.right != nil && n.right.updateLeaf(oldData, newData, newValue) {
+	if n.right != nil && n.right.updateLeaf(oldHash, newHash, newValue) {
 		n.updateHashAndSum()
 		return true
 	}
@@ -142,13 +139,16 @@ func (mst *MerkleSumTree) RootSum() int {
 func (mst *MerkleSumTree) GenerateProof(data []byte) ([][]byte, []int, bool) {
 	var path [][]byte
 	var sums []int
-	found := mst.root.generateProof(data, &path, &sums)
+	hash := sha256.Sum256(data)
+	found := mst.root.generateProof(hash[:], &path, &sums)
 
 	return path, sums, found
 }
 
 func (mst *MerkleSumTree) Update(oldData []byte, newData []byte, newValue int) bool {
-	return mst.root.updateLeaf(oldData, newData, newValue)
+	oldHash := sha256.Sum256(oldData)
+	newHash := sha256.Sum256(newData)
+	return mst.root.updateLeaf(oldHash[:], newHash[:], newValue)
 }
 func (mst *MerkleSumTree) Print() {
 	mst.root.print(0)

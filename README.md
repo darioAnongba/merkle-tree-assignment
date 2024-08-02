@@ -71,8 +71,8 @@ Implementation considerations:
 
 A Sparse (meaning ‘thinly scattered’) Merkle tree is a data structure in which it can be proven that specific data doesn't exist within a merkle tree. An SMT is an authenticated key-value store, meaning that the key, or location, of a leaf and the content of the leaf are bound to each other.
 
-- Efficient proofs for non-membership
-- Typically used to represent large state spaces
+- Efficient proofs for non-existence
+- Used to represent large address space
 
 Implementation considerations:
 

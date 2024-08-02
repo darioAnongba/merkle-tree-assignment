@@ -22,7 +22,7 @@ func newSparseNode(hash []byte) *SparseNode {
 	return &SparseNode{hash: hash}
 }
 
-func (n *SparseNode) updateNode(leafIndex int, dataHash []byte, depth int) *SparseNode {
+func (n *SparseNode) update(leafIndex int, dataHash []byte, depth int) *SparseNode {
 	if depth == 0 {
 		return newSparseNode(dataHash[:])
 	}
@@ -32,12 +32,12 @@ func (n *SparseNode) updateNode(leafIndex int, dataHash []byte, depth int) *Spar
 		if n.left == nil {
 			n.left = newSparseNode(defaultHash[:])
 		}
-		n.left = n.left.updateNode(leafIndex, dataHash, depth-1)
+		n.left = n.left.update(leafIndex, dataHash, depth-1)
 	} else {
 		if n.right == nil {
 			n.right = newSparseNode(defaultHash[:])
 		}
-		n.right = n.right.updateNode(leafIndex, dataHash, depth-1)
+		n.right = n.right.update(leafIndex, dataHash, depth-1)
 	}
 
 	leftHash := defaultHash[:]
@@ -96,7 +96,7 @@ func (smt *SparseMerkleTree) RootHash() []byte {
 
 func (smt *SparseMerkleTree) Update(leafIndex int, data []byte) {
 	hash := sha256.Sum256(data)
-	smt.root = smt.root.updateNode(leafIndex, hash[:], TREE_DEPTH)
+	smt.root = smt.root.update(leafIndex, hash[:], TREE_DEPTH)
 }
 
 func (smt *SparseMerkleTree) GenerateProof(leafIndex int) [][]byte {

@@ -16,6 +16,7 @@ type Node struct {
 func newNode(left, right *Node, data []byte) *Node {
 	node := &Node{left: left, right: right}
 
+	// If the node is a leaf, hash the data, otherwise hash the concatenation of the left and right children's hashes
 	if left == nil && right == nil {
 		hash := sha256.Sum256(data)
 		node.hash = hash[:]
@@ -28,6 +29,11 @@ func newNode(left, right *Node, data []byte) *Node {
 	return node
 }
 
+// generateProof generates a proof for the given data in the Merkle tree.
+// It recursively traverses the tree to find the data and constructs the proof path.
+// The proof path is stored in the provided path slice, where each element represents a node in the path.
+// The proof path is constructed by appending the hash of the sibling node and a flag indicating whether the sibling is on the left or right.
+// Returns true if the data is found in the tree and the proof is generated, false otherwise.
 func (n *Node) generateProof(data []byte, path *[][]byte) bool {
 	if n.left == nil && n.right == nil {
 		hash := sha256.Sum256(data)
@@ -45,18 +51,20 @@ func (n *Node) generateProof(data []byte, path *[][]byte) bool {
 	return false
 }
 
-func (n *Node) updateLeaf(oldData, newData []byte) bool {
+// updateLeaf updates the hash of a leaf node if the old data matches the current hash.
+// It traverses the tree to find the leaf node with the matching old data, updates its hash with the new data,
+// and then updates the hashes of all its ancestors.
+// Returns true if the leaf node is found and updated, false otherwise.
+func (n *Node) updateLeaf(oldHash, newHash []byte) bool {
 	if n.left == nil && n.right == nil {
-		oldHash := sha256.Sum256(oldData)
 		if bytes.Equal(n.hash, oldHash[:]) {
-			newHash := sha256.Sum256(newData)
 			n.hash = newHash[:]
 			return true
 		}
 		return false
 	}
 
-	if n.left.updateLeaf(oldData, newData) || n.right.updateLeaf(oldData, newData) {
+	if n.left.updateLeaf(oldHash, newHash) || n.right.updateLeaf(oldHash, newHash) {
 		leftHash := n.left.hash
 		rightHash := n.right.hash
 		hash := sha256.Sum256(append(leftHash, rightHash...))
@@ -68,10 +76,6 @@ func (n *Node) updateLeaf(oldData, newData []byte) bool {
 }
 
 func (n *Node) print(level int) {
-	if n == nil {
-		return
-	}
-
 	indent := ""
 	for i := 0; i < level; i++ {
 		indent += "    "
@@ -143,7 +147,9 @@ func VerifyProof(data []byte, proof [][]byte, rootHash []byte) bool {
 }
 
 func (mt *MerkleTree) Update(oldData, newData []byte) bool {
-	return mt.root.updateLeaf(oldData, newData)
+	oldHash := sha256.Sum256(oldData)
+	newHash := sha256.Sum256(newData)
+	return mt.root.updateLeaf(oldHash[:], newHash[:])
 }
 
 func (mt *MerkleTree) Print() {
