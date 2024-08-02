@@ -22,12 +22,12 @@ func main() {
 		fmt.Printf("Proof for 'a': %x\n", proof)
 	}
 
-	valid := merkle.VerifyProof([]byte("a"), proof, tree.Root.Hash)
+	valid := merkle.VerifyProof([]byte("a"), proof, tree.RootHash())
 	fmt.Printf("Proof valid: %v\n", valid)
 
 	updated := tree.Update([]byte("a"), []byte("e"))
 	if updated {
-		fmt.Printf("Updated root hash: %x\n", tree.Root.Hash)
+		fmt.Printf("Updated root hash: %x\n", tree.RootHash())
 	}
 
 	proof, found = tree.GenerateProof([]byte("e"))
@@ -35,7 +35,7 @@ func main() {
 		fmt.Printf("Proof for 'e': %x\n", proof)
 	}
 
-	valid = merkle.VerifyProof([]byte("e"), proof, tree.Root.Hash)
+	valid = merkle.VerifyProof([]byte("e"), proof, tree.RootHash())
 	fmt.Printf("Proof valid: %v\n", valid)
 
 	sumTtree := merkle.NewMerkleSumTree(data, values)
@@ -47,12 +47,12 @@ func main() {
 		fmt.Printf("Sums for 'a': %v\n", sums)
 	}
 
-	sumTreeValid := merkle.VerifySumProof([]byte("a"), values[0], proof, sums, sumTtree.Root.Hash, sumTtree.Root.Sum)
+	sumTreeValid := merkle.VerifySumProof([]byte("a"), values[0], proof, sums, sumTtree.RootHash(), sumTtree.RootSum())
 	fmt.Printf("Proof valid: %v\n", sumTreeValid)
 
 	updated = sumTtree.Update([]byte("a"), []byte("e"), 10)
 	if updated {
-		fmt.Printf("Updated root hash: %x\n", tree.Root.Hash)
+		fmt.Printf("Updated root hash: %x\n", tree.RootHash())
 	}
 
 	proof, sums, found = sumTtree.GenerateProof([]byte("e"))
@@ -61,7 +61,7 @@ func main() {
 		fmt.Printf("Sums for 'e': %v\n", sums)
 	}
 
-	valid = merkle.VerifySumProof([]byte("e"), 10, proof, sums, sumTtree.Root.Hash, sumTtree.Root.Sum)
+	valid = merkle.VerifySumProof([]byte("e"), 10, proof, sums, sumTtree.RootHash(), sumTtree.RootSum())
 	fmt.Printf("Proof valid: %v\n", valid)
 
 	sparseTree := merkle.NewSparseMerkleTree()

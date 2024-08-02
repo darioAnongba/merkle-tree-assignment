@@ -8,37 +8,37 @@ import (
 )
 
 type Node struct {
-	Left  *Node
-	Right *Node
-	Hash  []byte
+	left  *Node
+	right *Node
+	hash  []byte
 }
 
 func newNode(left, right *Node, data []byte) *Node {
-	node := &Node{Left: left, Right: right}
+	node := &Node{left: left, right: right}
 
 	if left == nil && right == nil {
 		hash := sha256.Sum256(data)
-		node.Hash = hash[:]
+		node.hash = hash[:]
 	} else {
-		prevHashes := append(left.Hash, right.Hash...)
+		prevHashes := append(left.hash, right.hash...)
 		hash := sha256.Sum256(prevHashes)
-		node.Hash = hash[:]
+		node.hash = hash[:]
 	}
 
 	return node
 }
 
 func (n *Node) generateProof(data []byte, path *[][]byte) bool {
-	if n.Left == nil && n.Right == nil {
+	if n.left == nil && n.right == nil {
 		hash := sha256.Sum256(data)
-		return bytes.Equal(n.Hash, hash[:])
+		return bytes.Equal(n.hash, hash[:])
 	}
-	if n.Left.generateProof(data, path) {
-		*path = append(*path, append([]byte{0x00}, n.Right.Hash...))
+	if n.left.generateProof(data, path) {
+		*path = append(*path, append([]byte{0x00}, n.right.hash...))
 		return true
 	}
-	if n.Right.generateProof(data, path) {
-		*path = append(*path, append([]byte{0x01}, n.Left.Hash...))
+	if n.right.generateProof(data, path) {
+		*path = append(*path, append([]byte{0x01}, n.left.hash...))
 		return true
 	}
 
@@ -46,21 +46,21 @@ func (n *Node) generateProof(data []byte, path *[][]byte) bool {
 }
 
 func (n *Node) updateLeaf(oldData, newData []byte) bool {
-	if n.Left == nil && n.Right == nil {
+	if n.left == nil && n.right == nil {
 		oldHash := sha256.Sum256(oldData)
-		if bytes.Equal(n.Hash, oldHash[:]) {
+		if bytes.Equal(n.hash, oldHash[:]) {
 			newHash := sha256.Sum256(newData)
-			n.Hash = newHash[:]
+			n.hash = newHash[:]
 			return true
 		}
 		return false
 	}
 
-	if n.Left.updateLeaf(oldData, newData) || n.Right.updateLeaf(oldData, newData) {
-		leftHash := n.Left.Hash
-		rightHash := n.Right.Hash
+	if n.left.updateLeaf(oldData, newData) || n.right.updateLeaf(oldData, newData) {
+		leftHash := n.left.hash
+		rightHash := n.right.hash
 		hash := sha256.Sum256(append(leftHash, rightHash...))
-		n.Hash = hash[:]
+		n.hash = hash[:]
 		return true
 	}
 
@@ -77,19 +77,19 @@ func (n *Node) print(level int) {
 		indent += "    "
 	}
 
-	fmt.Printf("%sHash: %s\n", indent, hex.EncodeToString(n.Hash))
+	fmt.Printf("%sHash: %s\n", indent, hex.EncodeToString(n.hash))
 
-	if n.Left != nil || n.Right != nil {
+	if n.left != nil || n.right != nil {
 		fmt.Printf("%sL:\n", indent)
-		n.Left.print(level + 1)
+		n.left.print(level + 1)
 
 		fmt.Printf("%sR:\n", indent)
-		n.Right.print(level + 1)
+		n.right.print(level + 1)
 	}
 }
 
 type MerkleTree struct {
-	Root *Node
+	root *Node
 }
 
 func NewMerkleTree(data [][]byte) *MerkleTree {
@@ -111,12 +111,16 @@ func NewMerkleTree(data [][]byte) *MerkleTree {
 		nodes = newLevel
 	}
 
-	return &MerkleTree{Root: nodes[0]}
+	return &MerkleTree{root: nodes[0]}
+}
+
+func (mt *MerkleTree) RootHash() []byte {
+	return mt.root.hash
 }
 
 func (mt *MerkleTree) GenerateProof(data []byte) ([][]byte, bool) {
 	var path [][]byte
-	found := mt.Root.generateProof(data, &path)
+	found := mt.root.generateProof(data, &path)
 
 	return path, found
 }
@@ -139,9 +143,9 @@ func VerifyProof(data []byte, proof [][]byte, rootHash []byte) bool {
 }
 
 func (mt *MerkleTree) Update(oldData, newData []byte) bool {
-	return mt.Root.updateLeaf(oldData, newData)
+	return mt.root.updateLeaf(oldData, newData)
 }
 
 func (mt *MerkleTree) Print() {
-	mt.Root.print(0)
+	mt.root.print(0)
 }

@@ -8,19 +8,10 @@ import (
 
 func TestNewMerkleTree(t *testing.T) {
 	tree := newMerkleTree()
-	tree.Print()
-
-	if tree.Root == nil {
-		t.Errorf("Expected root to be non-nil")
-	}
-}
-
-func TestMerkleTreeRootHash(t *testing.T) {
-	tree := newMerkleTree()
 
 	expectedRootHash := "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7"
 
-	if hash := hex.EncodeToString(tree.Root.Hash); hash != expectedRootHash {
+	if hash := hex.EncodeToString(tree.RootHash()); hash != expectedRootHash {
 		t.Errorf("Expected root hash %s, got %s", expectedRootHash, hash)
 	}
 }
@@ -46,12 +37,12 @@ func TestVerifyProofLeft(t *testing.T) {
 		t.Fatalf("Expected to find proof for 'a'")
 	}
 
-	valid := merkle.VerifyProof([]byte("a"), proof, tree.Root.Hash)
+	valid := merkle.VerifyProof([]byte("a"), proof, tree.RootHash())
 	if !valid {
 		t.Errorf("Expected proof to be valid")
 	}
 
-	valid = merkle.VerifyProof([]byte("unknown"), proof, tree.Root.Hash)
+	valid = merkle.VerifyProof([]byte("unknown"), proof, tree.RootHash())
 	if valid {
 		t.Errorf("Expected proof for unknown data to be invalid")
 	}
@@ -66,7 +57,7 @@ func TestVerifyProofRight(t *testing.T) {
 		t.Fatalf("Expected to find proof for 'd'")
 	}
 
-	valid := merkle.VerifyProof(data, proof, tree.Root.Hash)
+	valid := merkle.VerifyProof(data, proof, tree.RootHash())
 	if !valid {
 		t.Errorf("Expected proof to be valid")
 	}
@@ -85,7 +76,7 @@ func TestUpdate(t *testing.T) {
 		t.Errorf("Expected to find proof for 'e'")
 	}
 
-	valid := merkle.VerifyProof([]byte("e"), proof, tree.Root.Hash)
+	valid := merkle.VerifyProof([]byte("e"), proof, tree.RootHash())
 	if !valid {
 		t.Errorf("Expected proof for updated leaf to be valid")
 	}

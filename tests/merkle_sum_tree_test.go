@@ -1,6 +1,7 @@
 package merkle_test
 
 import (
+	"encoding/hex"
 	"merkle-tree-assignment/internal/merkle"
 	"testing"
 )
@@ -8,8 +9,10 @@ import (
 func TestNewMerkleSumTree(t *testing.T) {
 	tree := newMerkleSumTree()
 
-	if tree.Root == nil {
-		t.Errorf("Expected root to be non-nil")
+	expectedRootHash := "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7"
+
+	if hash := hex.EncodeToString(tree.RootHash()); hash != expectedRootHash {
+		t.Errorf("Expected root hash %s, got %s", expectedRootHash, hash)
 	}
 }
 
@@ -38,17 +41,17 @@ func TestVerifySumProofLeftLeaf(t *testing.T) {
 		t.Fatalf("Expected to find proof for 'a'")
 	}
 
-	valid := merkle.VerifySumProof(data, 1, proof, sums, tree.Root.Hash, tree.Root.Sum)
+	valid := merkle.VerifySumProof(data, 1, proof, sums, tree.RootHash(), tree.RootSum())
 	if !valid {
 		t.Errorf("Expected proof to be valid")
 	}
 
-	valid = merkle.VerifySumProof([]byte("unknown"), 1, proof, sums, tree.Root.Hash, tree.Root.Sum)
+	valid = merkle.VerifySumProof([]byte("unknown"), 1, proof, sums, tree.RootHash(), tree.RootSum())
 	if valid {
 		t.Errorf("Expected proof for unknown data to be invalid")
 	}
 
-	valid = merkle.VerifySumProof(data, 667, proof, sums, tree.Root.Hash, tree.Root.Sum)
+	valid = merkle.VerifySumProof(data, 667, proof, sums, tree.RootHash(), tree.RootSum())
 	if valid {
 		t.Errorf("Expected proof for incorrect expected value to be invalid")
 	}
@@ -64,7 +67,7 @@ func TestVerifySumProofRightLeaf(t *testing.T) {
 		t.Fatalf("Expected to find proof for 'c'")
 	}
 
-	valid := merkle.VerifySumProof(data, 4, proof, sums, tree.Root.Hash, tree.Root.Sum)
+	valid := merkle.VerifySumProof(data, 4, proof, sums, tree.RootHash(), tree.RootSum())
 	if !valid {
 		t.Errorf("Expected proof to be valid")
 	}
@@ -83,7 +86,7 @@ func TestUpdateSum(t *testing.T) {
 		t.Errorf("Expected to find proof for 'e'")
 	}
 
-	valid := merkle.VerifySumProof([]byte("e"), 10, proof, sums, tree.Root.Hash, tree.Root.Sum)
+	valid := merkle.VerifySumProof([]byte("e"), 10, proof, sums, tree.RootHash(), tree.RootSum())
 	if !valid {
 		t.Errorf("Expected proof for updated leaf to be valid")
 	}

@@ -8,42 +8,42 @@ import (
 )
 
 type SumNode struct {
-	Hash  []byte
-	Sum   int
-	Left  *SumNode
-	Right *SumNode
+	hash  []byte
+	sum   int
+	left  *SumNode
+	right *SumNode
 }
 
 func newSumNode(left, right *SumNode, data []byte, value int) *SumNode {
-	node := &SumNode{Left: left, Right: right}
+	node := &SumNode{left: left, right: right}
 
 	if left == nil && right == nil {
 		hash := sha256.Sum256(data)
-		node.Hash = hash[:]
-		node.Sum = value
+		node.hash = hash[:]
+		node.sum = value
 	} else {
-		combinedHash := append(left.Hash, right.Hash...)
+		combinedHash := append(left.hash, right.hash...)
 		hash := sha256.Sum256(combinedHash)
-		node.Hash = hash[:]
-		node.Sum = left.Sum + right.Sum
+		node.hash = hash[:]
+		node.sum = left.sum + right.sum
 	}
 
 	return node
 }
 
 func (n *SumNode) generateProof(data []byte, path *[][]byte, sums *[]int) bool {
-	if n.Left == nil && n.Right == nil {
+	if n.left == nil && n.right == nil {
 		hash := sha256.Sum256(data)
-		return bytes.Equal(n.Hash, hash[:])
+		return bytes.Equal(n.hash, hash[:])
 	}
-	if n.Left != nil && n.Left.generateProof(data, path, sums) {
-		*path = append(*path, append([]byte{0x00}, n.Right.Hash...))
-		*sums = append(*sums, n.Right.Sum)
+	if n.left != nil && n.left.generateProof(data, path, sums) {
+		*path = append(*path, append([]byte{0x00}, n.right.hash...))
+		*sums = append(*sums, n.right.sum)
 		return true
 	}
-	if n.Right != nil && n.Right.generateProof(data, path, sums) {
-		*path = append(*path, append([]byte{0x01}, n.Left.Hash...))
-		*sums = append(*sums, n.Left.Sum)
+	if n.right != nil && n.right.generateProof(data, path, sums) {
+		*path = append(*path, append([]byte{0x01}, n.left.hash...))
+		*sums = append(*sums, n.left.sum)
 		return true
 	}
 
@@ -51,31 +51,31 @@ func (n *SumNode) generateProof(data []byte, path *[][]byte, sums *[]int) bool {
 }
 
 func (n *SumNode) updateHashAndSum() {
-	if n.Left == nil && n.Right == nil {
+	if n.left == nil && n.right == nil {
 		return
 	}
-	combinedHash := append(n.Left.Hash, n.Right.Hash...)
+	combinedHash := append(n.left.hash, n.right.hash...)
 	hash := sha256.Sum256(combinedHash)
-	n.Hash = hash[:]
-	n.Sum = n.Left.Sum + n.Right.Sum
+	n.hash = hash[:]
+	n.sum = n.left.sum + n.right.sum
 }
 
 func (n *SumNode) updateLeaf(oldData []byte, newData []byte, newValue int) bool {
-	if n.Left == nil && n.Right == nil {
+	if n.left == nil && n.right == nil {
 		hash := sha256.Sum256(oldData)
-		if bytes.Equal(n.Hash, hash[:]) {
+		if bytes.Equal(n.hash, hash[:]) {
 			newHash := sha256.Sum256(newData)
-			n.Hash = newHash[:]
-			n.Sum = newValue
+			n.hash = newHash[:]
+			n.sum = newValue
 			return true
 		}
 		return false
 	}
-	if n.Left != nil && n.Left.updateLeaf(oldData, newData, newValue) {
+	if n.left != nil && n.left.updateLeaf(oldData, newData, newValue) {
 		n.updateHashAndSum()
 		return true
 	}
-	if n.Right != nil && n.Right.updateLeaf(oldData, newData, newValue) {
+	if n.right != nil && n.right.updateLeaf(oldData, newData, newValue) {
 		n.updateHashAndSum()
 		return true
 	}
@@ -92,20 +92,20 @@ func (n *SumNode) print(level int) {
 		indent += "    "
 	}
 
-	fmt.Printf("%sHash: %s\n", indent, hex.EncodeToString(n.Hash))
-	fmt.Printf("%sSum: %d\n", indent, n.Sum)
+	fmt.Printf("%sHash: %s\n", indent, hex.EncodeToString(n.hash))
+	fmt.Printf("%sSum: %d\n", indent, n.sum)
 
-	if n.Left != nil || n.Right != nil {
+	if n.left != nil || n.right != nil {
 		fmt.Printf("%sL:\n", indent)
-		n.Left.print(level + 1)
+		n.left.print(level + 1)
 
 		fmt.Printf("%sR:\n", indent)
-		n.Right.print(level + 1)
+		n.right.print(level + 1)
 	}
 }
 
 type MerkleSumTree struct {
-	Root *SumNode
+	root *SumNode
 }
 
 func NewMerkleSumTree(data [][]byte, values []int) *MerkleSumTree {
@@ -127,23 +127,31 @@ func NewMerkleSumTree(data [][]byte, values []int) *MerkleSumTree {
 		nodes = newLevel
 	}
 
-	tree := &MerkleSumTree{Root: nodes[0]}
+	tree := &MerkleSumTree{root: nodes[0]}
 	return tree
+}
+
+func (mst *MerkleSumTree) RootHash() []byte {
+	return mst.root.hash
+}
+
+func (mst *MerkleSumTree) RootSum() int {
+	return mst.root.sum
 }
 
 func (mst *MerkleSumTree) GenerateProof(data []byte) ([][]byte, []int, bool) {
 	var path [][]byte
 	var sums []int
-	found := mst.Root.generateProof(data, &path, &sums)
+	found := mst.root.generateProof(data, &path, &sums)
 
 	return path, sums, found
 }
 
 func (mst *MerkleSumTree) Update(oldData []byte, newData []byte, newValue int) bool {
-	return mst.Root.updateLeaf(oldData, newData, newValue)
+	return mst.root.updateLeaf(oldData, newData, newValue)
 }
 func (mst *MerkleSumTree) Print() {
-	mst.Root.print(0)
+	mst.root.print(0)
 }
 
 func VerifySumProof(data []byte, expectedValue int, proof [][]byte, sums []int, rootHash []byte, rootSum int) bool {
